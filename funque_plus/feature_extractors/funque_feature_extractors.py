@@ -181,8 +181,11 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         strred_scales = [0]*self.wavelet_levels
 
                     feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
-                    feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+
+                    feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
+                    for level, value in zip(levels, strred_scales):
+                        res_dict[f'strred_scalar_channel_{channel_name}_levels_{level}'].append(value) 
 
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
@@ -282,8 +285,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
 
                     feats_dict[f'mad_dis_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
                     res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
-                    
-                    
+
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
                         res_dict[f'strred_scalar_channel_{channel_name}_levels_{level}'].append(value) 
