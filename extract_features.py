@@ -62,8 +62,7 @@ def main():
     else:
         for feat_val in result.agg_feats.flatten():
             print(f'{feat_val:.20f}')
-    
-   
+
     # if args.out_file is not None:
     #     ext = os.path.splitext(args.out_file)[-1]
     #     if ext != 'mat':
