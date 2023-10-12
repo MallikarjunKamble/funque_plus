@@ -56,10 +56,10 @@ def main():
     print('Computed features:')
     if len(result.feat_names) == len(result.agg_feats):
         for feat_name, feat_val in zip(result.feat_names.flatten(), result.agg_feats.flatten()):
-            print(f'{feat_name}: {feat_val:.4f}')
+            print(f'{feat_name}: {feat_val:.20f}')
     else:
         for feat_val in result.agg_feats.flatten():
-            print(f'{feat_val:.4f}')
+            print(f'{feat_val:.20f}')
 
     if args.out_file is not None:
         ext = os.path.splitext(args.out_file)[-1]

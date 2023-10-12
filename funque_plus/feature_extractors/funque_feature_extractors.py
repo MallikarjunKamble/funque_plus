@@ -103,7 +103,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'mad_ref_channel_y_scale_2']
+    feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_ref_channel_y_scale_2']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -148,6 +148,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
 
                     if frame_ind % sample_interval:
                         prev_pyr_ref = pyr_ref.copy()
+                        prev_pyr_dis = pyr_dis.copy()
                         continue
 
                     # SSIM features
@@ -161,11 +162,18 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     # MAD features
                     if frame_ind != 0:
                         motion_val = np.mean(np.abs(pyr_ref[0][-1]- prev_pyr_ref[0][-1]))
+
+                        # STRRED features
+                        (_, _, strred_scales) = pyr_features.strred_hv_pyr(pyr_ref, pyr_dis, prev_pyr_ref, prev_pyr_dis, block_size=1)
                     else:
                         motion_val = 0 
+                        strred_scales = [0]*self.wavelet_levels
+
                     feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
+                    feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
 
                     prev_pyr_ref = pyr_ref
+                    prev_pyr_dis = pyr_dis
 
         feats = np.array(list(feats_dict.values())).T
 
