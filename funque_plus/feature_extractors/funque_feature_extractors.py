@@ -106,8 +106,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
     feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_ref_channel_y_scale_2']
-    res_names = ['Frame','ms_ssim_cov_channel_y_levels_1','ms_ssim_cov_channel_y_levels_2','dlm_channel_y_scale', 'mad_dis_channel_y_scale','strred_scalar_channel_y_levels_1',
-                 'strred_scalar_channel_y_levels_2']
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -124,8 +123,8 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
         channel_name = 'y'
         channel_ind = 0
 
-        if self.wavelet_levels ==2:
-            levels = [1,2]
+        if self.wavelet_levels == 2:
+            levels = [0, 1]
         with Video(
             asset_dict['ref_path'], mode='r',
             standard=asset_dict['ref_standard'],
@@ -163,12 +162,12 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
                     for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{level}'].append(value) 
+                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value) 
         
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-                    res_dict[f'dlm_channel_{channel_name}_scale'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
                     
                     # MAD features
                     if frame_ind != 0:
@@ -181,11 +180,11 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         strred_scales = [0]*self.wavelet_levels
 
                     feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
-                    res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+                    #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
-                        res_dict[f'strred_scalar_channel_{channel_name}_levels_{level}'].append(value) 
+                        res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value) 
 
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
@@ -207,9 +206,8 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
     feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_dis_channel_y_scale_2', 'sai_diff_channel_y_scale_2']
-    res_names = ['Frame','ms_ssim_cov_channel_y_levels_1','ms_ssim_cov_channel_y_levels_2','dlm_channel_y_scale', 'mad_dis_channel_y_scale','strred_scalar_channel_y_levels_1',
-                 'strred_scalar_channel_y_levels_2', 'sai_diff_channel_y_scale']
-    
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 2
@@ -225,8 +223,8 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
         channel_name = 'y'
         channel_ind = 0
 
-        if self.wavelet_levels ==2:
-            levels = [1,2]
+        if self.wavelet_levels == 2:
+            levels = [0, 1]
             
         with Video(
             asset_dict['ref_path'], mode='r',
@@ -266,12 +264,12 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
                     for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{level}'].append(value) 
+                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value)
 
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-                    res_dict[f'dlm_channel_{channel_name}_scale'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
                     
                     if frame_ind != 0:
                         # MAD features
@@ -284,11 +282,11 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                         strred_scales = [0]*self.wavelet_levels
 
                     feats_dict[f'mad_dis_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
-                    res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+                    #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
-                        res_dict[f'strred_scalar_channel_{channel_name}_levels_{level}'].append(value) 
+                        res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value)
                         
                     # TLVQM-like features 
                     # Spatial activity - swap Haar H, V for Sobel H, V
@@ -299,7 +297,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     sai_dis = np.std(np.sqrt(energy_dis))**0.25
 
                     feats_dict[f'sai_diff_channel_{channel_name}_scale_{self.wavelet_levels}'].append(sai_ref - sai_dis)
-                    res_dict[f'sai_diff_channel_{channel_name}_scale'].append(sai_ref - sai_dis)
+                    #res_dict[f'sai_diff_channel_{channel_name}_scale'].append(sai_ref - sai_dis)
                     
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
