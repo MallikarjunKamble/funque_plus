@@ -6,6 +6,8 @@ from qualitylib.result import Result
 
 import numpy as np
 import cv2
+import pandas as pd
+import sys
 from ..features.funque_atoms import pyr_features, vif_utils, filter_utils
 
 
@@ -104,7 +106,9 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
     feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'mad_ref_channel_y_scale_2']
-
+    res_names = ['Frame','ms_ssim_cov_channel_y_levels_1','ms_ssim_cov_channel_y_levels_2','dlm_channel_y_scale', 'mad_dis_channel_y_scale','strred_scalar_channel_y_levels_1',
+                 'strred_scalar_channel_y_levels_2']
+    
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 2
@@ -114,11 +118,14 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
         sample_interval = self._get_sample_interval(asset_dict)
         feats_dict = {key: [] for key in self.feat_names}
-
+        res_dict = {key: [] for key in self.res_names}
+        
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
         channel_ind = 0
 
+        if self.wavelet_levels ==2:
+            levels = [1,2]
         with Video(
             asset_dict['ref_path'], mode='r',
             standard=asset_dict['ref_standard'],
@@ -133,6 +140,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                 h_crop = (v_ref.height >> (self.wavelet_levels+1)) << self.wavelet_levels
 
                 for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    res_dict['Frame'].append(frame_ind)
                     y_ref = cv2.resize(frame_ref.yuv[..., 0].astype(v_ref.standard.dtype), (frame_ref.width//2, frame_ref.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['ref_standard'].range
                     y_dis = cv2.resize(frame_dis.yuv[..., 0].astype(v_dis.standard.dtype), (frame_dis.width//2, frame_dis.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['dis_standard'].range
 
@@ -153,20 +161,28 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     # SSIM features
                     _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-
+                    for level, value in zip(levels, ms_ssim_cov_scales):
+                        res_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{level}'].append(value) 
+        
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-
+                    res_dict[f'dlm_channel_{channel_name}_scale'].append(dlm_val)
+                    
                     # MAD features
                     if frame_ind != 0:
                         motion_val = np.mean(np.abs(pyr_ref[0][-1]- prev_pyr_ref[0][-1]))
                     else:
                         motion_val = 0 
                     feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
-
+                    res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+                    
                     prev_pyr_ref = pyr_ref
 
+        data = {k: pd.Series(v) for k, v in res_dict.items()}
+        res_df = pd.DataFrame(data)
+        res_df.to_csv(asset_dict['out_file'], index=False)
+        
         feats = np.array(list(feats_dict.values())).T
 
         print(f'Processed {asset_dict["dis_path"]}')
@@ -180,7 +196,9 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
     feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_dis_channel_y_scale_2', 'sai_diff_channel_y_scale_2']
-
+    res_names = ['Frame','ms_ssim_cov_channel_y_levels_1','ms_ssim_cov_channel_y_levels_2','dlm_channel_y_scale', 'mad_dis_channel_y_scale','strred_scalar_channel_y_levels_1',
+                 'strred_scalar_channel_y_levels_2', 'sai_diff_channel_y_scale']
+    
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 2
@@ -190,11 +208,15 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
         sample_interval = self._get_sample_interval(asset_dict)
         feats_dict = {key: [] for key in self.feat_names}
-
+        res_dict = {key: [] for key in self.res_names}
+        
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
         channel_ind = 0
 
+        if self.wavelet_levels ==2:
+            levels = [1,2]
+            
         with Video(
             asset_dict['ref_path'], mode='r',
             standard=asset_dict['ref_standard'],
@@ -209,6 +231,8 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                 h_crop = (v_ref.height >> self.wavelet_levels) << self.wavelet_levels
 
                 for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    res_dict['Frame'].append(frame_ind)
+
                     y_ref = frame_ref.yuv[..., 0] / asset_dict['ref_standard'].range
                     y_dis = frame_dis.yuv[..., 0] / asset_dict['dis_standard'].range
 
@@ -230,11 +254,14 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     # SSIM features
                     _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
+                    for level, value in zip(levels, ms_ssim_cov_scales):
+                        res_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{level}'].append(value) 
 
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-
+                    res_dict[f'dlm_channel_{channel_name}_scale'].append(dlm_val)
+                    
                     if frame_ind != 0:
                         # MAD features
                         motion_val = np.mean(np.abs(pyr_dis[0][-1]- prev_pyr_dis[0][-1]))
@@ -246,8 +273,13 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                         strred_scales = [0]*self.wavelet_levels
 
                     feats_dict[f'mad_dis_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
+                    res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+                    
+                    
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
-
+                    for level, value in zip(levels, strred_scales):
+                        res_dict[f'strred_scalar_channel_{channel_name}_levels_{level}'].append(value) 
+                        
                     # TLVQM-like features 
                     # Spatial activity - swap Haar H, V for Sobel H, V
                     energy_ref = pyr_ref[1][-1][0]**2 + pyr_ref[1][-1][1]**2
@@ -257,10 +289,15 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     sai_dis = np.std(np.sqrt(energy_dis))**0.25
 
                     feats_dict[f'sai_diff_channel_{channel_name}_scale_{self.wavelet_levels}'].append(sai_ref - sai_dis)
-
+                    res_dict[f'sai_diff_channel_{channel_name}_scale'].append(sai_ref - sai_dis)
+                    
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
-
+        
+        data = {k: pd.Series(v) for k, v in res_dict.items()}
+        res_df = pd.DataFrame(data)
+        res_df.to_csv(asset_dict['out_file'], index=False)
+        
         feats = np.array(list(feats_dict.values())).T
         print(f'Processed {asset_dict["dis_path"]}')
         return self._to_result(asset_dict, feats, list(feats_dict.keys()))

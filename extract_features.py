@@ -7,6 +7,7 @@ from funque_plus.feature_extractors import *
 from funque_plus.utils import get_standard
 
 import argparse
+import pandas as pd
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Code to extract features from video pair')
@@ -38,6 +39,7 @@ def main():
     asset_dict['width'] = args.width
     asset_dict['height'] = args.height
     asset_dict['fps'] = args.framerate
+    asset_dict['out_file'] = args.out_file
     
     FexClass = get_fex(args.fex_name, args.fex_version)
 
@@ -56,17 +58,17 @@ def main():
     print('Computed features:')
     if len(result.feat_names) == len(result.agg_feats):
         for feat_name, feat_val in zip(result.feat_names.flatten(), result.agg_feats.flatten()):
-            print(f'{feat_name}: {feat_val:.4f}')
+            print(f'{feat_name}: {feat_val:.20f}')
     else:
         for feat_val in result.agg_feats.flatten():
-            print(f'{feat_val:.4f}')
-
-    if args.out_file is not None:
-        ext = os.path.splitext(args.out_file)[-1]
-        if ext != 'mat':
-            raise OSError(f'Invalid extension {ext}, expected \'mat\'')
-        result.save(args.out_file)
-
+            print(f'{feat_val:.20f}')
+    
+   
+    # if args.out_file is not None:
+    #     ext = os.path.splitext(args.out_file)[-1]
+    #     if ext != 'mat':
+    #         raise OSError(f'Invalid extension {ext}, expected \'mat\'')
+    #     result.save(args.out_file)
 
 if __name__ == '__main__':
     main()
