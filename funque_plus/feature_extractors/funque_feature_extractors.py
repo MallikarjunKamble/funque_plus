@@ -162,9 +162,9 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_mean_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_mean_scales[-1])
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(value)
-                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(value)
+                    for level, value_mean, value_cov in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(value_mean)
+                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(value_cov)
         
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
@@ -266,9 +266,9 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_mean_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_mean_scales[-1])
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(value)
-                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(value)
+                    for level, value_mean, value_cov in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(value_mean)
+                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(value_cov)
 
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
