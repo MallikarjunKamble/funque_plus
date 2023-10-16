@@ -207,7 +207,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_dis_channel_y_scale_2', 'sai_diff_channel_y_scale_2']
+    feat_names = ['ms_ssim_cov_channel_y_levels_2', 'ms_ssim_mean_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_dis_channel_y_scale_2', 'sai_diff_channel_y_scale_2']
     res_names = ['Frame','FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_mean_scale1_score' ,'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_cov_scale1_score' ,'FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_cov_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
