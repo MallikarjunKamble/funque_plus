@@ -309,6 +309,218 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
         return self._to_result(asset_dict, feats, list(feats_dict.keys()))
 
 
+class YFunquePlusFeatureExtractor(FeatureExtractor):
+    '''
+    A feature extractor that implements Y-FUNQUE+.
+    '''
+    NAME = 'Y_FUNQUE_Plus_fex_Resizer_Disabled'
+    VERSION = '1.0'
+    #feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_ref_channel_y_scale_2']
+    feat_names = ['ms_ssim_cov_channel_y_levels_4', 'dlm_channel_y_scale_4', 'strred_scalar_channel_y_levels_4', 'mad_ref_channel_y_scale_4']
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+
+    def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
+        super().__init__(use_cache, sample_rate)
+        self.wavelet_levels = 4
+        self.csf = 'nadenau_weight'
+        self.wavelet = 'haar'
+
+    def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
+        sample_interval = self._get_sample_interval(asset_dict)
+        feats_dict = {key: [] for key in self.feat_names}
+        res_dict = {key: [] for key in self.res_names}
+
+        channel_names = ['y', 'u', 'v']
+        channel_name = 'y'
+        channel_ind = 0
+
+        if self.wavelet_levels == 4:
+            levels = [0, 1, 2, 3]
+        with Video(
+            asset_dict['ref_path'], mode='r',
+            standard=asset_dict['ref_standard'],
+            width=asset_dict['width'], height=asset_dict['height']
+        ) as v_ref:
+            with Video(
+                asset_dict['dis_path'], mode='r',
+                standard=asset_dict['dis_standard'],
+                width=asset_dict['width'], height=asset_dict['height']
+            ) as v_dis:
+                w_crop = (v_ref.width >> (self.wavelet_levels+1)) << self.wavelet_levels
+                h_crop = (v_ref.height >> (self.wavelet_levels+1)) << self.wavelet_levels
+
+                for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    res_dict['Frame'].append(frame_ind)
+                    y_ref = frame_ref.yuv[..., 0] / asset_dict['ref_standard'].range
+                    y_dis = frame_dis.yuv[..., 0] / asset_dict['dis_standard'].range
+
+                    # Cropping to a power of 2 to avoid problems in SSIM
+                    y_ref = y_ref[:h_crop, :w_crop]
+                    y_dis = y_dis[:h_crop, :w_crop]
+
+                    channel_ref = y_ref
+                    channel_dis = y_dis
+
+                    [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
+                    [pyr_ref, pyr_dis] = [filter_utils.filter_pyr(pyr, self.csf, channel=channel_ind) for pyr in (pyr_ref, pyr_dis)]
+
+                    if frame_ind % sample_interval:
+                        prev_pyr_ref = pyr_ref.copy()
+                        prev_pyr_dis = pyr_dis.copy()
+                        continue
+
+                    # SSIM features
+                    _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
+                    feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
+                    for level, value in zip(levels, ms_ssim_cov_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value)
+
+                    # DLM features
+                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
+
+                    # MAD features
+                    if frame_ind != 0:
+                        motion_val = np.mean(np.abs(pyr_ref[0][-1]- prev_pyr_ref[0][-1]))
+                        # STRRED features
+                        (_, _, strred_scales) = pyr_features.strred_hv_pyr(pyr_ref, pyr_dis, prev_pyr_ref, prev_pyr_dis, block_size=1)
+                    else:
+                        motion_val = 0 
+                        strred_scales = [0]*self.wavelet_levels
+                    feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
+
+#res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
+
+                    feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
+                    for level, value in zip(levels, strred_scales):
+                        res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value) 
+
+                    prev_pyr_ref = pyr_ref
+                    prev_pyr_dis = pyr_dis
+
+        data = {k: pd.Series(v) for k, v in res_dict.items()}
+        res_df = pd.DataFrame(data)
+        res_df.to_csv(asset_dict['out_file'], index=False)
+
+        feats = np.array(list(feats_dict.values())).T
+
+        print(f'Processed {asset_dict["dis_path"]}')
+        return self._to_result(asset_dict, feats, list(feats_dict.keys()))
+
+
+class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
+    '''
+    A feature extractor that implements FS-Y-FUNQUE+.
+    '''
+    NAME = 'FS_Y_FUNQUE_Plus_fex_Resizer_Enabled'
+    VERSION = '1.0'
+    #feat_names = ['ms_ssim_cov_channel_y_levels_2', 'dlm_channel_y_scale_2', 'strred_scalar_channel_y_levels_2', 'mad_dis_channel_y_scale_2', 'sai_diff_channel_y_scale_2']
+    feat_names = ['ms_ssim_cov_channel_y_levels_4', 'dlm_channel_y_scale_4', 'strred_scalar_channel_y_levels_4', 'mad_dis_channel_y_scale_4', 'sai_diff_channel_y_scale_4']
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+
+    def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
+        super().__init__(use_cache, sample_rate)
+        self.wavelet_levels = 4
+        self.csf = 'nadenau_spat'
+        self.wavelet = 'haar'
+
+    def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
+        sample_interval = self._get_sample_interval(asset_dict)
+        feats_dict = {key: [] for key in self.feat_names}
+        res_dict = {key: [] for key in self.res_names}
+
+        channel_names = ['y', 'u', 'v']
+        channel_name = 'y'
+        channel_ind = 0
+
+        if self.wavelet_levels == 4:
+            levels = [0, 1, 2, 3]
+
+        with Video(
+            asset_dict['ref_path'], mode='r',
+            standard=asset_dict['ref_standard'],
+            width=asset_dict['width'], height=asset_dict['height']
+        ) as v_ref:
+            with Video(
+                asset_dict['dis_path'], mode='r',
+                standard=asset_dict['dis_standard'],
+                width=asset_dict['width'], height=asset_dict['height']
+            ) as v_dis:
+                w_crop = (v_ref.width >> self.wavelet_levels) << self.wavelet_levels
+                h_crop = (v_ref.height >> self.wavelet_levels) << self.wavelet_levels
+
+                for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    res_dict['Frame'].append(frame_ind)
+                    y_ref = frame_ref.yuv[..., 0] / asset_dict['ref_standard'].range
+                    y_dis = frame_dis.yuv[..., 0] / asset_dict['dis_standard'].range
+                    y_ref = cv2.resize(frame_ref.yuv[..., 0].astype(v_ref.standard.dtype), (frame_ref.width//2, frame_ref.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['ref_standard'].range
+                    y_dis = cv2.resize(frame_dis.yuv[..., 0].astype(v_dis.standard.dtype), (frame_dis.width//2, frame_dis.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['dis_standard'].range
+
+                    # Cropping to a power of 2 to avoid problems in SSIM
+                    y_ref = y_ref[:h_crop, :w_crop]
+                    y_dis = y_dis[:h_crop, :w_crop]
+
+                    channel_ref = y_ref
+                    channel_dis = y_dis
+
+                    [channel_ref, channel_dis] = [filter_utils.filter_img(channel, self.csf, self.wavelet, channel=channel_ind) for channel in (channel_ref, channel_dis)]
+                    [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
+
+                    if frame_ind % sample_interval:
+                        prev_pyr_ref = pyr_ref.copy()
+                        prev_pyr_dis = pyr_dis.copy()
+                        continue
+
+                    # SSIM features
+                    _, (ms_ssim_cov_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
+                    feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
+                    for level, value in zip(levels, ms_ssim_cov_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value)
+
+                    # DLM features
+                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
+
+                    if frame_ind != 0:
+                        # MAD features
+                        motion_val = np.mean(np.abs(pyr_dis[0][-1]- prev_pyr_dis[0][-1]))
+
+                        # STRRED features
+                        (_, _, strred_scales) = pyr_features.strred_hv_pyr(pyr_ref, pyr_dis, prev_pyr_ref, prev_pyr_dis, block_size=1)
+                    else:
+                        motion_val = 0 
+                        strred_scales = [0]*self.wavelet_levels
+
+                    feats_dict[f'mad_dis_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
+                    feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
+                    for level, value in zip(levels, strred_scales):
+                        res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value)
+
+                    # TLVQM-like features 
+                    # Spatial activity - swap Haar H, V for Sobel H, V
+                    energy_ref = pyr_ref[1][-1][0]**2 + pyr_ref[1][-1][1]**2
+                    energy_dis = pyr_dis[1][-1][0]**2 + pyr_dis[1][-1][1]**2
+
+                    sai_ref = np.std(np.sqrt(energy_ref))**0.25
+                    sai_dis = np.std(np.sqrt(energy_dis))**0.25
+
+                    feats_dict[f'sai_diff_channel_{channel_name}_scale_{self.wavelet_levels}'].append(sai_ref - sai_dis)
+                    #res_dict[f'sai_diff_channel_{channel_name}_scale'].append(sai_ref - sai_dis)
+
+                    prev_pyr_ref = pyr_ref
+                    prev_pyr_dis = pyr_dis
+
+        data = {k: pd.Series(v) for k, v in res_dict.items()}
+        res_df = pd.DataFrame(data)
+        res_df.to_csv(asset_dict['out_file'], index=False)
+
+        feats = np.array(list(feats_dict.values())).T
+        print(f'Processed {asset_dict["dis_path"]}')
+        return self._to_result(asset_dict, feats, list(feats_dict.keys()))
+
+
 class ThreeChannelFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     A feature extractor that implements FS-Y-FUNQUE+.
