@@ -105,14 +105,14 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 2
         self.csf = 'nadenau_weight'
         self.wavelet = 'haar'
-        self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', , f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_ref_channel_y_scale_{self.wavelet_levels}']
-        res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+        self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_ref_channel_y_scale_{self.wavelet_levels}']
 
     def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
         sample_interval = self._get_sample_interval(asset_dict)
@@ -122,6 +122,9 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
         channel_ind = 0
+
+        if self.wavelet_levels:
+            levels = [0, 1, 2, 3]
 
         with Video(
             asset_dict['ref_path'], mode='r',
@@ -159,7 +162,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     # SSIM features
                     ms_ssim_cov_scales, _ = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='cov')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(self.wavelet_levels, ms_ssim_cov_scales):
+                    for level, value in zip(levels, ms_ssim_cov_scales):
                         res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value) 
 
                     # DLM features
@@ -181,7 +184,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
-                    for level, value in zip(self.wavelet_levels, strred_scales):
+                    for level, value in zip(levels, strred_scales):
                         res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value) 
 
                     prev_pyr_ref = pyr_ref
@@ -203,6 +206,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
+    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -210,8 +214,6 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
         self.csf = 'nadenau_spat'
         self.wavelet = 'haar'
         self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_dis_channel_y_scale_{self.wavelet_levels}', f'sai_diff_channel_y_scale_{self.wavelet_levels}']
-        res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
-
 
     def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
         sample_interval = self._get_sample_interval(asset_dict)
@@ -221,6 +223,9 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
         channel_ind = 0
+
+        if self.wavelet_levels:
+            levels = [0, 1, 2, 3]
 
         with Video(
             asset_dict['ref_path'], mode='r',
@@ -259,7 +264,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     # SSIM features
                     ms_ssim_cov_scales, _ = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='cov')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(self.wavelet_levels, ms_ssim_cov_scales):
+                    for level, value in zip(levels, ms_ssim_cov_scales):
                         res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value)
 
                     # DLM features
@@ -281,7 +286,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
-                    for level, value in zip(self.wavelet_levels, strred_scales):
+                    for level, value in zip(levels, strred_scales):
                         res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value)
 
                     # TLVQM-like features 

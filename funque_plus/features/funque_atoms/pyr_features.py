@@ -226,7 +226,7 @@ def ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov'):
         raise ValueError('Invalid pool option.')
 
 
-def ms_ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov', full=False):
+def ms_ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='all', full=False):
     # Pyramids are assumed to have the structure
     # ([A1, ..., An], [(H1, V1, D1), ..., (Hn, Vn, Dn)])
     approxs_ref, details_ref = pyr_ref
@@ -244,6 +244,9 @@ def ms_ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov', full
     l_cov_scales = np.zeros((n_levels,))
     cs_cov_scales = np.zeros((n_levels,))
     ssim_cov_scales = np.zeros((n_levels,))
+    l_mink_scales = np.zeros((n_levels,))
+    cs_mink_scales = np.zeros((n_levels,))
+    ssim_mink_scales = np.zeros((n_levels,))
 
     C1 = (K1*max_val)**2
     C2 = (K2*max_val)**2
