@@ -105,11 +105,14 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+    res_names = ['Frame','FUNQUE_feature_adm_score','FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_mean_scale3_score',
+                 'FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_cov_scale1_score' ,'FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_cov_scale3_score',
+                 'FUNQUE_feature_ms_ssim_mink_scale0_score','FUNQUE_feature_ms_ssim_mink_scale1_score' ,'FUNQUE_feature_ms_ssim_mink_scale2_score','FUNQUE_feature_ms_ssim_mink_scale3_score', 
+                 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
-        self.wavelet_levels = 2
+        self.wavelet_levels = 4
         self.csf = 'nadenau_weight'
         self.wavelet = 'haar'
         self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_ref_channel_y_scale_{self.wavelet_levels}']
@@ -160,10 +163,12 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         continue
 
                     # SSIM features
-                    ms_ssim_cov_scales, _ = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='cov')
+                    (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value) 
+                    for level, mean, cov, mink in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales, ms_ssim_mink_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(mean)
+                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(cov)
+                        res_dict[f'FUNQUE_feature_ms_ssim_mink_scale{level}_score'].append(mink)
 
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
@@ -206,7 +211,10 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_ms_ssim_scale0_score','FUNQUE_feature_ms_ssim_scale1_score' ,'FUNQUE_feature_ms_ssim_scale2_score','FUNQUE_feature_ms_ssim_scale3_score', 'FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
+    res_names = ['Frame','FUNQUE_feature_adm_score','FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_mean_scale3_score',
+                 'FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_cov_scale1_score' ,'FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_cov_scale3_score',
+                 'FUNQUE_feature_ms_ssim_mink_scale0_score','FUNQUE_feature_ms_ssim_mink_scale1_score' ,'FUNQUE_feature_ms_ssim_mink_scale2_score','FUNQUE_feature_ms_ssim_mink_scale3_score', 
+                 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score']
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -262,10 +270,12 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                         continue
 
                     # SSIM features
-                    ms_ssim_cov_scales, _ = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='cov')
+                    (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
-                    for level, value in zip(levels, ms_ssim_cov_scales):
-                        res_dict[f'FUNQUE_feature_ms_ssim_scale{level}_score'].append(value)
+                    for level, mean, cov, mink in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales, ms_ssim_mink_scales):
+                        res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(mean)
+                        res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(cov)
+                        res_dict[f'FUNQUE_feature_ms_ssim_mink_scale{level}_score'].append(mink)
 
                     # DLM features
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
