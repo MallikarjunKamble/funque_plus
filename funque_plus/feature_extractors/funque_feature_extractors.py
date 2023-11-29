@@ -105,12 +105,11 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score','FUNQUE_feature_strred_scale1_score',
-                 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score'
+    res_names = ['Frame','FUNQUE_feature_adm_score', 
+                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
                 ]
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -213,12 +212,11 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_score', 'FUNQUE_feature_strred_scale0_score','FUNQUE_feature_strred_scale1_score',
-                 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score'
+    res_names = ['Frame','FUNQUE_feature_adm_score', 
+                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
                 ]
 
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
