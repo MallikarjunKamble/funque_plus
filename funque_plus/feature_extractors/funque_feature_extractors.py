@@ -9,7 +9,7 @@ import cv2
 import pandas as pd
 import sys
 from ..features.funque_atoms import pyr_features, vif_utils, filter_utils
-
+import time
 
 class FunqueFeatureExtractor(FeatureExtractor):
     '''
@@ -111,6 +111,8 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                  'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
                  'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
                 ]
+    prof_feat =['Frame','time_taken','resizer','filters','dwt','ms_ssim','strred']
+    
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 4
@@ -122,6 +124,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
         sample_interval = self._get_sample_interval(asset_dict)
         feats_dict = {key: [] for key in self.feat_names}
         res_dict = {key: [] for key in self.res_names}
+        prof_dict = {key: [] for key in self.prof_feat}
 
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
@@ -144,10 +147,14 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                 h_crop = (v_ref.height >> (self.wavelet_levels+1)) << self.wavelet_levels
 
                 for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    start_time = time.time()
                     res_dict['Frame'].append(frame_ind)
+                    prof_dict['Frame'].append(frame_ind)
+                    
+                    resizer_start_time =time.time()
                     y_ref = cv2.resize(frame_ref.yuv[..., 0].astype(v_ref.standard.dtype), (frame_ref.width//2, frame_ref.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['ref_standard'].range
                     y_dis = cv2.resize(frame_dis.yuv[..., 0].astype(v_dis.standard.dtype), (frame_dis.width//2, frame_dis.height//2), interpolation=cv2.INTER_CUBIC).astype('float64') / asset_dict['dis_standard'].range
-
+                    resizer_end_time = time.time()
                     # Cropping to a power of 2 to avoid problems in SSIM
                     y_ref = y_ref[:h_crop, :w_crop]
                     y_dis = y_dis[:h_crop, :w_crop]
@@ -155,7 +162,9 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     channel_ref = y_ref
                     channel_dis = y_dis
 
+                    dwt_start_time = time.time()
                     [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
+                    dwt_end_time = filters_start_time = time.time()
                     [pyr_ref, pyr_dis] = [filter_utils.filter_pyr(pyr, self.csf, channel=channel_ind) for pyr in (pyr_ref, pyr_dis)]
 
                     if frame_ind % sample_interval:
@@ -164,6 +173,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         continue
 
                     # SSIM features
+                    filters_end_time = ms_ssim_start_time = time.time()
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink3_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
                     for level, mean, cov, mink in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales, ms_ssim_mink3_scales):
@@ -172,13 +182,15 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         res_dict[f'FUNQUE_feature_ms_ssim_mink3_scale{level}_score'].append(mink)
 
                     # DLM features
+                    ms_ssim_end_time = dlm_start_time = time.time()
                     dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
                     res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
 
                     # MAD features
+                    dlm_end_time = strred_start_time = time.time()
                     if frame_ind != 0:
-                        motion_val = np.mean(np.abs(pyr_ref[0][-1]- prev_pyr_ref[0][-1]))
+                        #motion_val = np.mean(np.abs(pyr_ref[0][-1]- prev_pyr_ref[0][-1]))
 
                         # STRRED features
                         (_, _, strred_scales) = pyr_features.strred_hv_pyr(pyr_ref, pyr_dis, prev_pyr_ref, prev_pyr_dis, block_size=1)
@@ -195,7 +207,19 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
 
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
-
+                    strred_end_time = time.time()
+                    end_time = time.time()
+                    prof_dict['time_taken'].append(end_time - start_time)
+                    prof_dict['resizer'].append(resizer_end_time - resizer_start_time)
+                    prof_dict['filters'].append(filters_end_time - filters_start_time)
+                    prof_dict['dwt'].append(dwt_end_time - dwt_start_time)
+                    prof_dict['ms_ssim'].append(ms_ssim_end_time - ms_ssim_start_time)
+                    prof_dict['strred'].append(strred_end_time - strred_start_time)
+                 
+        prof_data = {k: pd.Series(v + ['Sum'] if k == 'Frame' else v + [sum(map(float, v))]) for k, v in prof_dict.items()}
+        prof_df = pd.DataFrame(prof_data)
+        prof_df.to_csv(asset_dict['profile_file'], index=False)
+                    
         data = {k: pd.Series(v) for k, v in res_dict.items()}
         res_df = pd.DataFrame(data)
         res_df.to_csv(asset_dict['out_file'], index=False)
@@ -218,18 +242,20 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                  'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
                  'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
                 ]
-
+    prof_feat =['Frame','time_taken','resizer','filters','dwt','ms_ssim','strred']
+        
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 4
         self.csf = 'nadenau_spat'
         self.wavelet = 'haar'
-        self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_dis_channel_y_scale_{self.wavelet_levels}', f'sai_diff_channel_y_scale_{self.wavelet_levels}']
+        self.feat_names = [f'ms_ssim_cov_channel_y_levels_{self.wavelet_levels}', f'dlm_channel_y_scale_{self.wavelet_levels}', f'strred_scalar_channel_y_levels_{self.wavelet_levels}', f'mad_dis_channel_y_scale_{self.wavelet_levels}']
 
-    def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
+    def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:        
         sample_interval = self._get_sample_interval(asset_dict)
         feats_dict = {key: [] for key in self.feat_names}
         res_dict = {key: [] for key in self.res_names}
+        prof_dict = {key: [] for key in self.prof_feat}
 
         channel_names = ['y', 'u', 'v']
         channel_name = 'y'
@@ -252,26 +278,33 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                 h_crop = (v_ref.height >> self.wavelet_levels) << self.wavelet_levels
 
                 for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
+                    start_time = time.time()
                     res_dict['Frame'].append(frame_ind)
-
+                    prof_dict['Frame'].append(frame_ind)
+                    
+                    resizer_start_time =time.time()
                     y_ref = frame_ref.yuv[..., 0] / asset_dict['ref_standard'].range
                     y_dis = frame_dis.yuv[..., 0] / asset_dict['dis_standard'].range
-
+                    resizer_end_time = time.time()
                     # Cropping to a power of 2 to avoid problems in SSIM
                     y_ref = y_ref[:h_crop, :w_crop]
                     y_dis = y_dis[:h_crop, :w_crop]
 
                     channel_ref = y_ref
                     channel_dis = y_dis
-
+                    
+                    filters_start_time = time.time()
                     [channel_ref, channel_dis] = [filter_utils.filter_img(channel, self.csf, self.wavelet, channel=channel_ind) for channel in (channel_ref, channel_dis)]
+                    
+                    filters_end_time = dwt_start_time = time.time()
                     [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
-
+                    dwt_end_time = ms_ssim_start_time = time.time()
+                    
                     if frame_ind % sample_interval:
                         prev_pyr_ref = pyr_ref.copy()
                         prev_pyr_dis = pyr_dis.copy()
                         continue
-
+                    
                     # SSIM features
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
@@ -280,14 +313,17 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                         res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(cov)
                         res_dict[f'FUNQUE_feature_ms_ssim_mink3_scale{level}_score'].append(mink)
 
+                    ms_ssim_end_time = dlm_start_time = time.time()
                     # DLM features
-                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    #dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    dlm_val = 0
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
                     res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
 
+                    dlm_end_time = strred_start_time = time.time()
                     if frame_ind != 0:
                         # MAD features
-                        motion_val = np.mean(np.abs(pyr_dis[0][-1]- prev_pyr_dis[0][-1]))
+                        #motion_val = np.mean(np.abs(pyr_dis[0][-1]- prev_pyr_dis[0][-1]))
 
                         # STRRED features
                         (_, _, strred_scales) = pyr_features.strred_hv_pyr(pyr_ref, pyr_dis, prev_pyr_ref, prev_pyr_dis, block_size=1)
@@ -301,21 +337,35 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
                         res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value)
-
+                    '''                   
                     # TLVQM-like features 
                     # Spatial activity - swap Haar H, V for Sobel H, V
+                    
                     energy_ref = pyr_ref[1][-1][0]**2 + pyr_ref[1][-1][1]**2
                     energy_dis = pyr_dis[1][-1][0]**2 + pyr_dis[1][-1][1]**2
 
                     sai_ref = np.std(np.sqrt(energy_ref))**0.25
-                    sai_dis = np.std(np.sqrt(energy_dis))**0.25
-
-                    feats_dict[f'sai_diff_channel_{channel_name}_scale_{self.wavelet_levels}'].append(sai_ref - sai_dis)
+                    sai_dis = np.std(np.sqrt(energy_dis))**0.25 modified append(sai_ref - sai_dis)
+                    
+                    feats_dict[f'sai_diff_channel_{channel_name}_scale_{self.wavelet_levels}'].append(0)
                     #res_dict[f'sai_diff_channel_{channel_name}_scale'].append(sai_ref - sai_dis)
-
+                    '''
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
-
+                    
+                    strred_end_time = time.time()
+                    end_time = time.time()
+                    prof_dict['time_taken'].append(end_time - start_time)
+                    prof_dict['resizer'].append(resizer_end_time - resizer_start_time)
+                    prof_dict['filters'].append(filters_end_time - filters_start_time)
+                    prof_dict['dwt'].append(dwt_end_time - dwt_start_time)
+                    prof_dict['ms_ssim'].append(ms_ssim_end_time - ms_ssim_start_time)
+                    prof_dict['strred'].append(strred_end_time - strred_start_time)
+                 
+        prof_data = {k: pd.Series(v + ['Sum'] if k == 'Frame' else v + [sum(map(float, v))]) for k, v in prof_dict.items()}
+        prof_df = pd.DataFrame(prof_data)
+        prof_df.to_csv(asset_dict['profile_file'], index=False)
+        
         data = {k: pd.Series(v) for k, v in res_dict.items()}
         res_df = pd.DataFrame(data)
         res_df.to_csv(asset_dict['out_file'], index=False)
