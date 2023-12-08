@@ -166,15 +166,17 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
                     dwt_end_time = filters_start_time = time.time()
                     [pyr_ref, pyr_dis] = [filter_utils.filter_pyr(pyr, self.csf, channel=channel_ind) for pyr in (pyr_ref, pyr_dis)]
-
+                    filters_end_time = time.time()
+                    
                     if frame_ind % sample_interval:
                         prev_pyr_ref = pyr_ref.copy()
                         prev_pyr_dis = pyr_dis.copy()
                         continue
 
                     # SSIM features
-                    filters_end_time = ms_ssim_start_time = time.time()
+                    ms_ssim_start_time = time.time()
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink3_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
+                    ms_ssim_end_time = time.time()
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
                     for level, mean, cov, mink in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales, ms_ssim_mink3_scales):
                         res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(mean)
@@ -182,8 +184,9 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                         res_dict[f'FUNQUE_feature_ms_ssim_mink3_scale{level}_score'].append(mink)
 
                     # DLM features
-                    ms_ssim_end_time = dlm_start_time = time.time()
-                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    dlm_start_time = time.time()
+                    #dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    dlm_val = 0
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
                     res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
 
@@ -197,7 +200,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     else:
                         motion_val = 0 
                         strred_scales = [0]*self.wavelet_levels
-
+                    strred_end_time = time.time()
                     feats_dict[f'mad_ref_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
                     #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
@@ -207,7 +210,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
 
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
-                    strred_end_time = time.time()
+                    
                     end_time = time.time()
                     prof_dict['time_taken'].append(end_time - start_time)
                     prof_dict['resizer'].append(resizer_end_time - resizer_start_time)
@@ -282,10 +285,9 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     res_dict['Frame'].append(frame_ind)
                     prof_dict['Frame'].append(frame_ind)
                     
-                    resizer_start_time =time.time()
                     y_ref = frame_ref.yuv[..., 0] / asset_dict['ref_standard'].range
                     y_dis = frame_dis.yuv[..., 0] / asset_dict['dis_standard'].range
-                    resizer_end_time = time.time()
+                    
                     # Cropping to a power of 2 to avoid problems in SSIM
                     y_ref = y_ref[:h_crop, :w_crop]
                     y_dis = y_dis[:h_crop, :w_crop]
@@ -294,11 +296,10 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     channel_dis = y_dis
                     
                     filters_start_time = time.time()
-                    [channel_ref, channel_dis] = [filter_utils.filter_img(channel, self.csf, self.wavelet, channel=channel_ind) for channel in (channel_ref, channel_dis)]
-                    
+                    [channel_ref, channel_dis] = [filter_utils.filter_img(channel, self.csf, self.wavelet, channel=channel_ind) for channel in (channel_ref, channel_dis)]                   
                     filters_end_time = dwt_start_time = time.time()
                     [pyr_ref, pyr_dis] = [pyr_features.custom_wavedec2(channel, self.wavelet, 'periodization', self.wavelet_levels) for channel in (channel_ref, channel_dis)]
-                    dwt_end_time = ms_ssim_start_time = time.time()
+                    dwt_end_time = time.time()
                     
                     if frame_ind % sample_interval:
                         prev_pyr_ref = pyr_ref.copy()
@@ -306,15 +307,18 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                         continue
                     
                     # SSIM features
+                    ms_ssim_start_time = time.time()
                     (ms_ssim_mean_scales, _), (ms_ssim_cov_scales, _), (ms_ssim_mink_scales, _) = pyr_features.ms_ssim_pyr(pyr_ref, pyr_dis, pool='all')
+                    ms_ssim_end_time = dlm_start_time = time.time()
+                    
                     feats_dict[f'ms_ssim_cov_channel_{channel_name}_levels_{self.wavelet_levels}'].append(ms_ssim_cov_scales[-1])
                     for level, mean, cov, mink in zip(levels, ms_ssim_mean_scales, ms_ssim_cov_scales, ms_ssim_mink_scales):
                         res_dict[f'FUNQUE_feature_ms_ssim_mean_scale{level}_score'].append(mean)
                         res_dict[f'FUNQUE_feature_ms_ssim_cov_scale{level}_score'].append(cov)
                         res_dict[f'FUNQUE_feature_ms_ssim_mink3_scale{level}_score'].append(mink)
 
-                    ms_ssim_end_time = dlm_start_time = time.time()
                     # DLM features
+                    dlm_start_time = time.time()    
                     #dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     dlm_val = 0
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
@@ -330,7 +334,8 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     else:
                         motion_val = 0 
                         strred_scales = [0]*self.wavelet_levels
-
+                    strred_end_time = time.time()
+                    
                     feats_dict[f'mad_dis_channel_{channel_name}_scale_{self.wavelet_levels}'].append(motion_val)
                     #res_dict[f'mad_dis_channel_{channel_name}_scale'].append(motion_val)
 
@@ -353,10 +358,9 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
                     
-                    strred_end_time = time.time()
                     end_time = time.time()
                     prof_dict['time_taken'].append(end_time - start_time)
-                    prof_dict['resizer'].append(resizer_end_time - resizer_start_time)
+                    prof_dict['resizer'].append(0)
                     prof_dict['filters'].append(filters_end_time - filters_start_time)
                     prof_dict['dwt'].append(dwt_end_time - dwt_start_time)
                     prof_dict['ms_ssim'].append(ms_ssim_end_time - ms_ssim_start_time)
