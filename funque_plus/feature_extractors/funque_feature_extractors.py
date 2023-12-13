@@ -23,6 +23,7 @@ class FunqueFeatureExtractor(FeatureExtractor):
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 1
         self.vif_extra_levels = 1
+        self.csf = 'ngan_spat'
         self.wavelet = 'haar'
 
     def _run_on_asset(self, asset_dict: Dict[str, Any]) -> Result:
