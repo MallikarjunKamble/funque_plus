@@ -21,6 +21,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--height', help='Width of input video. Required for raw YUV videos.', type=int, default=None)
     parser.add_argument('--framerate', help='Framerate of input video in FPS. Required for raw YUV videos.', type=int, default=None)
     parser.add_argument('--out_file', help='Path to output MAT file containing results. (Optional)', type=str, default=None)
+    parser.add_argument('--profile_file', help='Path to profile file containing results. (Optional)', type=str, default=None) 
     return parser
 
 
@@ -39,7 +40,7 @@ def main():
     asset_dict['height'] = args.height
     asset_dict['fps'] = args.framerate
     asset_dict['out_file'] = args.out_file
-       
+    asset_dict['profile_file'] = args.profile_file    
     FexClass = get_fex(args.fex_name, args.fex_version)
 
     fex_args = []
