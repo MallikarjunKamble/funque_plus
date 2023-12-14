@@ -178,7 +178,7 @@ def vif_pyr(pyr_ref, pyr_dist, full=False, block_size=3, sigma_nsq=None):
         return (vif_vals, vif_approx_vals), ((nums, dens), (approx_nums, approx_dens))
 
 
-def ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov'):
+def ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='all'):
     # Pyramids are assumed to have the structure
     # ([A1, ..., An], [(H1, V1, D1), ..., (Hn, Vn, Dn)])
     approxs_ref, details_ref = pyr_ref
@@ -226,7 +226,7 @@ def ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov'):
         raise ValueError('Invalid pool option.')
 
 
-def ms_ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='cov', full=False):
+def ms_ssim_pyr(pyr_ref, pyr_dist, max_val=1, K1=0.01, K2=0.03, pool='all', full=False):
     # Pyramids are assumed to have the structure
     # ([A1, ..., An], [(H1, V1, D1), ..., (Hn, Vn, Dn)])
     approxs_ref, details_ref = pyr_ref
