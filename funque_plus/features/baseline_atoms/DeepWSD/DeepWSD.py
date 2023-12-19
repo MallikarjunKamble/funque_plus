@@ -23,7 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import inspect
 from .utils import downsample
-from ot.lp import wasserstein_1d
+from scipy.stats import wasserstein_distance
 
 # Use L2pooling for VGG16 networks.
 # Original Maxpooling will generate distortions in color channels during optimization.

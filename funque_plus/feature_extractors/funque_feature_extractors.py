@@ -725,7 +725,7 @@ class VmafLikeFeatureExtractor(FeatureExtractor):
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
         self.wavelet_levels = 4
-        self.csf = 'watson'
+        self.csf = 'nadenau_weight'
         self.wavelet = 'haar'
         self.feat_names = \
             [f'dlm_channel_y_levels_{self.wavelet_levels}', f'motion_channel_y_scale_{self.wavelet_levels}'] + \
