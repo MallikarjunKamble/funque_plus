@@ -753,13 +753,18 @@ class VmafLikeFeatureExtractor(FeatureExtractor):
                 standard=asset_dict['dis_standard'],
                 width=asset_dict['width'], height=asset_dict['height']
             ) as v_dis:
+                w_crop = (v_ref.width >> (self.wavelet_levels)) << self.wavelet_levels
+                h_crop = (v_ref.height >> (self.wavelet_levels)) << self.wavelet_levels
                 for frame_ind, (frame_ref, frame_dis) in enumerate(zip(v_ref, v_dis)):
                     start_time = time.time()
                     res_dict['Frame'].append(frame_ind)
                     prof_dict['Frame'].append(frame_ind)
-                    
+
                     y_ref = frame_ref.yuv[..., 0].astype('float64')/asset_dict['ref_standard'].range
                     y_dis = frame_dis.yuv[..., 0].astype('float64')/asset_dict['dis_standard'].range
+
+                    y_ref = y_ref[:h_crop, :w_crop]
+                    y_dis = y_dis[:h_crop, :w_crop]
 
                     channel_ref = y_ref
                     channel_dis = y_dis
