@@ -86,9 +86,11 @@ def vif_channel_est(y_ref, y_dist, winsize, M=3):
 
 
 def vif_spatial(img_ref, img_dist, k=11, sigma_nsq=0.1, stride=1, full=False):
-    x = img_ref.astype('float64')
-    y = img_dist.astype('float64')
+    #x = img_ref.astype('float64')
+    #y = img_dist.astype('float64')
 
+    x = img_ref
+    y = img_dist
     _, _, var_x, var_y, cov_xy = moments(x, y, k, stride)
 
     g = cov_xy / (var_x + 1e-10)
