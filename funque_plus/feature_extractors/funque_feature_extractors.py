@@ -719,8 +719,8 @@ class VmafLikeFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'VMAF_Like_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_scale0_score','FUNQUE_feature_mad_scale0_score',
-                 'FUNQUE_feature_vif_scale0_score','FUNQUE_feature_vif_scale1_score','FUNQUE_feature_vif_scale2_score','FUNQUE_feature_vif_scale3_score']
+    res_names = ['Frame','FUNQUE_feature_adm_score', 'FUNQUE_feature_adm_scale0_score', 'FUNQUE_feature_adm_scale1_score', 'FUNQUE_feature_adm_scale2_score', 'FUNQUE_feature_adm_scale3_score',
+                'FUNQUE_feature_mad_scale0_score', 'FUNQUE_feature_vif_scale0_score','FUNQUE_feature_vif_scale1_score','FUNQUE_feature_vif_scale2_score','FUNQUE_feature_vif_scale3_score']
     prof_feat =['Frame','time_taken','resizer','filters','dwt','vif','adm','mad']    
     def __init__(self, use_cache: bool = True, sample_rate: Optional[int] = None) -> None:
         super().__init__(use_cache, sample_rate)
@@ -790,10 +790,12 @@ class VmafLikeFeatureExtractor(FeatureExtractor):
 
                     # DLM features
                     dlm_start_time = time.time()
-                    dlm_val = pyr_features.dlm_pyr(pyr_ref, pyr_dis, csf=None)
+                    dlm_val, dlm_level_wise_scores = pyr_features.dlm_pyr(pyr_ref, pyr_dis, csf=None)
                     dlm_end_time = time.time()
                     feats_dict[f'dlm_channel_{channel_name}_levels_{self.wavelet_levels}'].append(dlm_val)
-                    res_dict[f'FUNQUE_feature_adm_scale0_score'].append(dlm_val) 
+                    res_dict[f'FUNQUE_feature_adm_score'].append(dlm_val)
+                    for level, value in zip(levels, dlm_level_wise_scores):
+                        res_dict[f'FUNQUE_feature_adm_scale{level}_score'].append(value) 
                      
                     # MAD features
                     mad_start_time = time.time()
