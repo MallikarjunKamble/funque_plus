@@ -52,6 +52,16 @@ def dlm_pyr(pyr_ref, pyr_dist, border_size=0.1, csf='li'):
 #        border_w = int(border_size*w)
 #        for subband in level:
 #            dlm_num += np.power(np.sum(np.power(subband[border_h:-border_h, border_w:-border_w], 3.0)), 1.0/3)
+#
+#    for level in details_ref:
+#        h, w = level[0].shape
+#        border_h = int(border_size*h)
+#        border_w = int(border_size*w)
+#        for subband in level:
+#            dlm_den += np.power(np.sum(np.abs(np.power(subband[border_h:-border_h, border_w:-border_w], 3.0))), 1.0/3)
+#    dlm = (dlm_num + 1e-4) / (dlm_den + 1e-4)
+#    return dlm
+
 
     dlm_num_level_scores = []  # Initialize an empty list to store level-wise scores
     for level in pyr_rest:
@@ -61,9 +71,8 @@ def dlm_pyr(pyr_ref, pyr_dist, border_size=0.1, csf='li'):
         dlm_num_level = np.zeros(len(level))  # Initialize an array for level-wise scores
         for i, subband in enumerate(level):
             dlm_num_level[i] = np.power(np.sum(np.power(subband[border_h:-border_h, border_w:-border_w], 3.0)), 1.0/3)
-        dlm_num_level_scores.append(np.sum(dlm_num_level))
+        dlm_num_level_scores.append(np.sum(dlm_num_level) + 1e-4)
         dlm_num += np.sum(dlm_num_level)  # Accumulate the sum of level-wise scores for each level
-#        dlm_num = np.sum(dlm_num_level_scores, axis=0)
 
     dlm_den_level_scores = []
     for level in details_ref:
@@ -73,12 +82,11 @@ def dlm_pyr(pyr_ref, pyr_dist, border_size=0.1, csf='li'):
         dlm_den_level = np.zeros(len(level))
         for i, subband in enumerate(level):
             dlm_den_level[i] = np.power(np.sum(np.abs(np.power(subband[border_h:-border_h, border_w:-border_w], 3.0))), 1.0/3)
-        dlm_den_level_scores.append(np.sum(dlm_den_level))
+        dlm_den_level_scores.append(np.sum(dlm_den_level) + 1e-4)
         dlm_den += np.sum(dlm_den_level)
-#        dlm_den = np.sum(dlm_den_level_scores, axis=0)
 
     dlm = (dlm_num + 1e-4) / (dlm_den + 1e-4)
-    dlm_level_scores = (np.array(dlm_num_level_scores) + 1e-4) / (np.array(dlm_den_level_scores) + 1e-4)
+    dlm_level_scores = (np.array(dlm_num_level_scores)) / (np.array(dlm_den_level_scores))
 
     return dlm, dlm_level_scores
 

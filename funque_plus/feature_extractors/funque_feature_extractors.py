@@ -254,7 +254,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
 
                     # DLM features
                     dlm_start_time = time.time()
-                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    dlm_val, dlm_level_wise_scores = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     dlm_end_time = time.time()
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
                     res_dict[f'FUNQUE_feature_adm_scale0_score'].append(dlm_val)
@@ -397,7 +397,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
 
                     # DLM features
                     dlm_start_time = time.time()    
-                    dlm_val = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
+                    dlm_val, dlm_level_wise_scores = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     dlm_end_time = time.time()
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
                     res_dict[f'FUNQUE_feature_adm_scale0_score'].append(dlm_val)
