@@ -163,7 +163,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_scale0_score', 
+    res_names = ['Frame','FUNQUE_feature_adm_scale3_score',   
                  'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
                  'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
                  'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
@@ -257,7 +257,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     dlm_val, dlm_level_wise_scores = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     dlm_end_time = time.time()
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-                    res_dict[f'FUNQUE_feature_adm_scale0_score'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_scale3_score'].append(dlm_val)
 
                     # MAD features
                     strred_start_time = time.time()
@@ -307,7 +307,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_scale0_score', 
+    res_names = ['Frame','FUNQUE_feature_adm_scale3_score',   
                  'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
                  'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
                  'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
@@ -400,7 +400,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     dlm_val, dlm_level_wise_scores = pyr_features.dlm_pyr((None, [pyr_ref[1][-1]]), (None, [pyr_dis[1][-1]]), csf=None)
                     dlm_end_time = time.time()
                     feats_dict[f'dlm_channel_{channel_name}_scale_{self.wavelet_levels}'].append(dlm_val)
-                    res_dict[f'FUNQUE_feature_adm_scale0_score'].append(dlm_val)
+                    res_dict[f'FUNQUE_feature_adm_scale3_score'].append(dlm_val)
 
                     strred_start_time = time.time()
                     if frame_ind != 0:
