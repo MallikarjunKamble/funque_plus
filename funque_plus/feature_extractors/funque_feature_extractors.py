@@ -163,11 +163,14 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_scale3_score',   
-                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
+    res_names = ['Frame','FUNQUE_feature_adm_scale3_score', 
+                 'FUNQUE_feature_motion_scale0_score', 'FUNQUE_feature_motion_scale1_score', 'FUNQUE_feature_motion_scale2_score', 'FUNQUE_feature_motion_scale3_score', 
+                 'FUNQUE_feature_mad_scale0_score', 'FUNQUE_feature_mad_scale1_score', 'FUNQUE_feature_mad_scale2_score', 'FUNQUE_feature_mad_scale3_score',
+                 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score'
                 ]
     prof_feat =['Frame','time_taken','resizer','filters','dwt','adm','ms_ssim','strred']
     
@@ -274,7 +277,24 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
                         res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value) 
-
+                    
+                    # MOTION features
+                    motion_start_time = time.time()
+                    for level in levels:
+                        if frame_ind != 0:
+                            motion_val = np.mean(np.abs(prev_pyr_ref[level][0] - pyr_ref[level][0]))
+                        else:
+                            motion_val = 0
+                        res_dict[f'FUNQUE_feature_motion_scale{level}_score'].append(motion_val)
+                    motion_end_time = time.time()
+                    
+                    # MAD features
+                    mad_start_time = time.time()
+                    for level in levels:
+                        mad_val = np.mean(np.abs(pyr_ref[level][0] - pyr_dis[level][0]))
+                        res_dict[f'FUNQUE_feature_mad_scale{level}_score'].append(mad_val)
+                    mad_end_time = time.time()
+                    
                     prev_pyr_ref = pyr_ref
                     prev_pyr_dis = pyr_dis
                     
@@ -307,11 +327,13 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
     '''
     NAME = 'FS_Y_FUNQUE_Plus_fex'
     VERSION = '1.0'
-    res_names = ['Frame','FUNQUE_feature_adm_scale3_score',   
-                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score','FUNQUE_feature_strred_scale0_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score','FUNQUE_feature_strred_scale1_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score','FUNQUE_feature_strred_scale2_score',
-                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score','FUNQUE_feature_strred_scale3_score',
+    res_names = ['Frame','FUNQUE_feature_adm_scale3_score', 'FUNQUE_feature_motion_scale0_score', 'FUNQUE_feature_motion_scale1_score', 'FUNQUE_feature_motion_scale2_score', 'FUNQUE_feature_motion_scale3_score', 
+                 'FUNQUE_feature_mad_scale0_score', 'FUNQUE_feature_mad_scale1_score', 'FUNQUE_feature_mad_scale2_score', 'FUNQUE_feature_mad_scale3_score',
+                 'FUNQUE_feature_strred_scale0_score', 'FUNQUE_feature_strred_scale1_score', 'FUNQUE_feature_strred_scale2_score', 'FUNQUE_feature_strred_scale3_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale0_score','FUNQUE_feature_ms_ssim_cov_scale0_score','FUNQUE_feature_ms_ssim_mink3_scale0_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale1_score','FUNQUE_feature_ms_ssim_cov_scale1_score','FUNQUE_feature_ms_ssim_mink3_scale1_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale2_score','FUNQUE_feature_ms_ssim_cov_scale2_score','FUNQUE_feature_ms_ssim_mink3_scale2_score',
+                 'FUNQUE_feature_ms_ssim_mean_scale3_score','FUNQUE_feature_ms_ssim_cov_scale3_score','FUNQUE_feature_ms_ssim_mink3_scale3_score'
                 ]
     prof_feat =['Frame','time_taken','resizer','filters','dwt','adm','ms_ssim','strred']
 
@@ -418,6 +440,24 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     feats_dict[f'strred_scalar_channel_{channel_name}_levels_{self.wavelet_levels}'].append(strred_scales[-1])
                     for level, value in zip(levels, strred_scales):
                         res_dict[f'FUNQUE_feature_strred_scale{level}_score'].append(value)
+                    
+                    # MOTION features
+                    motion_start_time = time.time()
+                    for level in levels:
+                        if frame_ind != 0:
+                            motion_val = np.mean(np.abs(prev_pyr_ref[level][0] - pyr_ref[level][0]))
+                        else:
+                            motion_val = 0
+                        res_dict[f'FUNQUE_feature_motion_scale{level}_score'].append(motion_val)
+                    motion_end_time = time.time()
+                    
+                    # MAD features
+                    mad_start_time = time.time()
+                    for level in levels:
+                        mad_val = np.mean(np.abs(pyr_ref[level][0] - pyr_dis[level][0]))
+                        res_dict[f'FUNQUE_feature_mad_scale{level}_score'].append(mad_val)
+                    mad_end_time = time.time()
+                    
                     '''
                     # TLVQM-like features 
                     # Spatial activity - swap Haar H, V for Sobel H, V
