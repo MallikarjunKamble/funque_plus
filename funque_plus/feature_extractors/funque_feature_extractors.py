@@ -282,7 +282,7 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     motion_start_time = time.time()
                     for level in levels:
                         if frame_ind != 0:
-                            motion_val = np.mean(np.abs(prev_pyr_ref[level][0] - pyr_ref[level][0]))
+                            motion_val = np.mean(np.abs(prev_pyr_ref[0][level] - pyr_ref[0][level]))
                         else:
                             motion_val = 0
                         res_dict[f'FUNQUE_feature_motion_scale{level}_score'].append(motion_val)
@@ -291,7 +291,8 @@ class YFunquePlusFeatureExtractor(FeatureExtractor):
                     # MAD features
                     mad_start_time = time.time()
                     for level in levels:
-                        mad_val = np.mean(np.abs(pyr_ref[level][0] - pyr_dis[level][0]))
+                        #mad_val = np.mean(np.abs(pyr_ref[level][0] - pyr_dis[level][0]))
+                        mad_val = np.mean(np.abs(np.subtract(pyr_ref[0][level], pyr_dis[0][level])))
                         res_dict[f'FUNQUE_feature_mad_scale{level}_score'].append(mad_val)
                     mad_end_time = time.time()
                     
@@ -445,7 +446,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     motion_start_time = time.time()
                     for level in levels:
                         if frame_ind != 0:
-                            motion_val = np.mean(np.abs(prev_pyr_ref[level][0] - pyr_ref[level][0]))
+                            motion_val = np.mean(np.abs(prev_pyr_ref[0][level] - pyr_ref[0][level]))
                         else:
                             motion_val = 0
                         res_dict[f'FUNQUE_feature_motion_scale{level}_score'].append(motion_val)
@@ -454,7 +455,7 @@ class FullScaleYFunquePlusFeatureExtractor(FeatureExtractor):
                     # MAD features
                     mad_start_time = time.time()
                     for level in levels:
-                        mad_val = np.mean(np.abs(pyr_ref[level][0] - pyr_dis[level][0]))
+                        mad_val = np.mean(np.abs(pyr_ref[0][level] - pyr_dis[0][level]))
                         res_dict[f'FUNQUE_feature_mad_scale{level}_score'].append(mad_val)
                     mad_end_time = time.time()
                     
