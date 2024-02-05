@@ -4,12 +4,12 @@ from .gsm_utils import complex_gsm_model, gsm_model
 
 
 def rred_entropies_and_scales(subband, block_size=3):
-    sigma_nsq = 0.01
+    sigma_nsq = 0.001
     tol = 1e-10
 
     if block_size == 1:
         entr_const = np.log(2*np.pi*np.exp(1))
-        sigma_nsq = 0.01
+        sigma_nsq = 0.001
         k = 9
         k_norm = k**2
         x_pad = np.pad(subband, int((k - 1)/2), mode='reflect')
@@ -19,7 +19,7 @@ def rred_entropies_and_scales(subband, block_size=3):
         var_x = (int_2_x[:-k, :-k] - int_2_x[:-k, k:] - int_2_x[k:, :-k] + int_2_x[k:, k:])/k_norm - mu_x**2
         var_x = np.clip(var_x, 0, None)
         entropies = np.log(var_x + sigma_nsq) + entr_const
-        scales = np.log(0.1 + var_x)
+        scales = np.log(0.01 + var_x)
     else:
         if np.iscomplexobj(subband):
             s, cov, rel = complex_gsm_model(subband, block_size)
